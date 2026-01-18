@@ -1,4 +1,3 @@
-
 import { GoogleGenAI } from "@google/genai";
 
 // Initialize the Google GenAI client with the API key from environment variables.

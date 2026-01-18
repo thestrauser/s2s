@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
   Trash2, MapPin, Lock, Unlock, Activity, Plus,
-  Instagram, Facebook, Youtube, Twitter, Disc as Tiktok, 
-  Calendar, Music, Image as ImageIcon, ExternalLink, RotateCcw, Save,
+  Instagram, Facebook, Youtube, Disc as Tiktok, 
+  Music, Image as ImageIcon, ExternalLink, RotateCcw, Save,
   Sparkles, Loader2
 } from 'lucide-react';
 import { generateBandBio, generateBandPoster } from './geminiService';
