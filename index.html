@@ -1,0 +1,98 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soul To Squeeze | RHCP Tribute</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        .font-bangers { font-family: 'Bangers', cursive; }
+        .font-montserrat { font-family: 'Montserrat', sans-serif; }
+        body {
+            background-color: #0a0a0a;
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ff0000;
+            border-radius: 4px;
+        }
+        .rhcp-glow {
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.4);
+        }
+        
+        @keyframes colorShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        @keyframes hueCycle {
+            0% { filter: hue-rotate(0deg) contrast(1.2) brightness(1); }
+            50% { filter: hue-rotate(180deg) contrast(1.5) brightness(1.2); }
+            100% { filter: hue-rotate(360deg) contrast(1.2) brightness(1); }
+        }
+
+        @keyframes kenBurns {
+            0% { transform: scale(1) translate(0, 0); }
+            50% { transform: scale(1.15) translate(1%, -1%); }
+            100% { transform: scale(1) translate(0, 0); }
+        }
+
+        .animate-ken-burns {
+            animation: kenBurns 40s ease-in-out infinite;
+        }
+
+        .animate-hue-cycle {
+            animation: hueCycle 15s linear infinite;
+        }
+
+        /* The Psychedelic Wave effect */
+        .bg-color-wave {
+            background: linear-gradient(-45deg, #ff0000, #ff8c00, #4b0082, #ff0055, #800000);
+            background-size: 400% 400%;
+            animation: colorShift 12s ease infinite;
+        }
+
+        .liquid-overlay {
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.85) 100%);
+            mix-blend-mode: multiply;
+        }
+
+        .animate-spin-slow {
+            animation: spin 8s linear infinite;
+        }
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+<script type="importmap">
+{
+  "imports": {
+    "react/": "https://esm.sh/react@^19.2.3/",
+    "react": "https://esm.sh/react@^19.2.3",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
+    "@google/genai": "https://esm.sh/@google/genai@^1.35.0",
+    "lucide-react": "https://esm.sh/lucide-react@^0.562.0",
+    "react-router-dom": "https://esm.sh/react-router-dom@^7.12.0"
+  }
+}
+</script>
+</head>
+<body class="font-montserrat">
+    <div id="root"></div>
+</body>
+</html>

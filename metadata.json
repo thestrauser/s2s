@@ -1,0 +1,7 @@
+{
+  "name": "Soul To Squeeze - RHCP Tribute Band",
+  "description": "A high-energy website for 'Soul To Squeeze', the premier Red Hot Chili Peppers tribute band. Manage tour dates, media galleries, and audio tracks with ease.",
+  "requestFramePermissions": [
+    "microphone"
+  ]
+}
