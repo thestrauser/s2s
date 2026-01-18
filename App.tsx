@@ -3,7 +3,7 @@ import {
   Trash2, MapPin, Lock, Unlock, Activity, Plus,
   Instagram, Facebook, Youtube, Disc as Tiktok, 
   Music, Image as ImageIcon, ExternalLink, RotateCcw, Save,
-  Sparkles, Loader2
+  Sparkles, Loader2, ArrowRight, Zap, Menu, X
 } from 'lucide-react';
 import { generateBandBio, generateBandPoster } from './geminiService.ts';
 
@@ -23,27 +23,27 @@ type TourDate = {
   link: string;
 };
 
-// --- Initial Stable Data ---
-const INITIAL_BIO = "Soul To Squeeze is Long Island's premier tribute to the Red Hot Chili Peppers. We meticulously recreate the high-energy, soul-infused funk-rock experience that defines the Peppers' legendary live shows. From Flea's thumping bass to the soaring melodies of Kiedis, we bring the true California spirit to every stage.";
+// --- Initial Data ---
+const INITIAL_BIO = "Soul To Squeeze is Long Island's rawest tribute to the Red Hot Chili Peppers. We channel the chaotic energy of Flea, the spiritual flow of Kiedis, and the cosmic riffs of Frusciante to bring you a pure, unfiltered funk-rock explosion.";
 
 const INITIAL_TOUR: TourDate[] = [
-  { id: '1', date: 'JAN 24', venue: "Mr. Beery's", location: 'Bethpage, NY', link: 'https://www.mrbeerys.com/' },
+  { id: '1', date: 'FEB 01', venue: "Mulcahy's", location: 'Wantagh, NY', link: 'https://muls.com/' },
   { id: '2', date: 'FEB 14', venue: 'The Warehouse', location: 'Amityville, NY', link: '#' },
-  { id: '3', date: 'MAR 07', venue: 'Mulcahy\'s', location: 'Wantagh, NY', link: '#' },
+  { id: '3', date: 'MAR 22', venue: 'Revolution Bar', location: 'Amityville, NY', link: '#' },
 ];
 
 const INITIAL_BLOCKS: ContentBlock[] = [
   { 
     id: 'b1', 
     type: 'text', 
-    title: 'THE FUNK REVOLUTION', 
-    body: 'We don\'t just play the notes; we capture the spirit. Our setlist spans the entire RHCP catalog, from the raw punk-funk energy of the early 80s to the melodic masterpieces of the modern era.' 
+    title: 'THE FUNK IS REAL', 
+    body: 'We don\'t just cover the hits. We cover the deep cuts, the B-sides, and the live jams that made the Peppers the greatest band to ever emerge from the LA underground.' 
   },
   {
     id: 'b2',
     type: 'image',
-    title: 'LIVE ENERGY',
-    body: 'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=1200'
+    title: 'BLOOD SUGAR SEX MAGIK',
+    body: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?auto=format&fit=crop&q=80&w=1200'
   }
 ];
 
@@ -56,40 +56,29 @@ export default function App() {
   const [isGeneratingBio, setIsGeneratingBio] = useState(false);
   const [generatingPosterId, setGeneratingPosterId] = useState<string | null>(null);
 
-  // --- Persistence Logic ---
   useEffect(() => {
-    const savedBio = localStorage.getItem('sts_bio');
-    const savedBlocks = localStorage.getItem('sts_blocks');
-    const savedTour = localStorage.getItem('sts_tour');
+    const savedBio = localStorage.getItem('sts_bio_v2');
+    const savedBlocks = localStorage.getItem('sts_blocks_v2');
+    const savedTour = localStorage.getItem('sts_tour_v2');
 
     if (savedBio) setBio(savedBio);
     if (savedBlocks) {
-      try {
-        setBlocks(JSON.parse(savedBlocks));
-      } catch (e) {
-        setBlocks(INITIAL_BLOCKS);
-      }
+      try { setBlocks(JSON.parse(savedBlocks)); } catch (e) { setBlocks(INITIAL_BLOCKS); }
     }
     if (savedTour) {
-      try {
-        setTour(JSON.parse(savedTour));
-      } catch (e) {
-        setTour(INITIAL_TOUR);
-      }
+      try { setTour(JSON.parse(savedTour)); } catch (e) { setTour(INITIAL_TOUR); }
     }
-    
     setHasLoaded(true);
   }, []);
 
   useEffect(() => {
     if (hasLoaded) {
-      localStorage.setItem('sts_bio', bio);
-      localStorage.setItem('sts_blocks', JSON.stringify(blocks));
-      localStorage.setItem('sts_tour', JSON.stringify(tour));
+      localStorage.setItem('sts_bio_v2', bio);
+      localStorage.setItem('sts_blocks_v2', JSON.stringify(blocks));
+      localStorage.setItem('sts_tour_v2', JSON.stringify(tour));
     }
   }, [bio, blocks, tour, hasLoaded]);
 
-  // --- AI Handlers ---
   const handleGenerateBio = async () => {
     setIsGeneratingBio(true);
     const newBio = await generateBandBio("Soul To Squeeze");
@@ -99,59 +88,14 @@ export default function App() {
 
   const handleGeneratePoster = async (id: string, title: string) => {
     setGeneratingPosterId(id);
-    const posterUrl = await generateBandPoster(title || "Red Hot Chili Peppers Concert");
-    if (posterUrl) {
-      updateBlock(id, 'body', posterUrl);
-    }
+    const posterUrl = await generateBandPoster(title || "RHCP Tribute Poster");
+    if (posterUrl) updateBlock(id, 'body', posterUrl);
     setGeneratingPosterId(null);
   };
 
-  const resetToFactory = () => {
-    if (window.confirm("Restore to January 14 version? This will undo all your custom text and images.")) {
-      setBio(INITIAL_BIO);
-      setBlocks(INITIAL_BLOCKS);
-      setTour(INITIAL_TOUR);
-      localStorage.clear();
-      setIsEditMode(false);
-    }
-  };
-
-  // --- Handlers ---
-  const addTextBlock = () => {
-    setBlocks([...blocks, {
-      id: Date.now().toString(),
-      type: 'text',
-      title: 'NEW FUNK SECTION',
-      body: 'Add your story here...'
-    }]);
-  };
-
-  const addImageBlock = () => {
-    setBlocks([...blocks, {
-      id: Date.now().toString(),
-      type: 'image',
-      title: 'NEW MOMENT',
-      body: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9?auto=format&fit=crop&q=80&w=800'
-    }]);
-  };
-
-  const removeBlock = (id: string) => setBlocks(blocks.filter(b => b.id !== id));
-  
   const updateBlock = (id: string, field: keyof ContentBlock, value: string) => {
     setBlocks(blocks.map(b => b.id === id ? { ...b, [field]: value } : b));
   };
-
-  const addTourDate = () => {
-    setTour([...tour, {
-      id: Date.now().toString(),
-      date: 'TBA',
-      venue: 'NEW STAGE',
-      location: 'CITY, ST',
-      link: '#'
-    }]);
-  };
-
-  const removeTour = (id: string) => setTour(tour.filter(t => t.id !== id));
 
   const updateTour = (id: string, field: keyof TourDate, value: string) => {
     setTour(tour.map(t => t.id === id ? { ...t, [field]: value } : t));
@@ -160,258 +104,242 @@ export default function App() {
   if (!hasLoaded) return null;
 
   return (
-    <div className="min-h-screen bg-[#0a0a0a] text-white font-montserrat transition-opacity duration-500">
-      
-      {/* Navigation */}
-      <nav className="fixed top-0 w-full z-50 bg-black/90 backdrop-blur-md border-b border-red-900/30 px-6 py-4 flex justify-between items-center h-20">
-        <div className="flex items-center gap-3 group cursor-pointer" onClick={() => window.scrollTo({top:0, behavior:'smooth'})}>
-          <Activity size={32} className="text-red-600 rhcp-glow transition-transform group-hover:rotate-12" />
-          <span className="font-bangers text-3xl tracking-widest uppercase italic">
-            Soul<span className="text-red-600">To</span>Squeeze
+    <div className="min-h-screen text-white selection:bg-[#ff0038] selection:text-white">
+      <div className="scanline"></div>
+
+      {/* Modern Brutalist Nav */}
+      <nav className="fixed top-0 w-full z-[100] bg-black/80 backdrop-blur-xl border-b-4 border-white h-24 flex items-center justify-between px-8">
+        <div className="flex items-center gap-4">
+          <div className="bg-[#ff0038] p-2 rotate-45 border-2 border-white">
+            <Zap size={24} className="-rotate-45" />
+          </div>
+          <span className="font-bangers text-4xl tracking-tighter uppercase italic leading-none">
+            SOUL<span className="text-[#ff0038]">TO</span>SQUEEZE
           </span>
         </div>
-        
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex gap-8 font-black text-[10px] uppercase tracking-[0.2em] text-zinc-500 mr-8">
-            <a href="#bio" className="hover:text-red-600 transition-colors">Biography</a>
-            <a href="#tour" className="hover:text-red-600 transition-colors">Tour Dates</a>
-            <a href="#media" className="hover:text-red-600 transition-colors">Sights</a>
+
+        <div className="flex items-center gap-6">
+          <div className="hidden lg:flex gap-10 font-black text-[10px] uppercase tracking-[0.3em]">
+            <a href="#about" className="hover:text-[#ff0038] transition-colors">THE VIBE</a>
+            <a href="#tour" className="hover:text-[#ff0038] transition-colors">LIVE DATES</a>
+            <a href="#media" className="hover:text-[#ff0038] transition-colors">SIGHTS</a>
           </div>
-          
-          {isEditMode && (
-            <button 
-              onClick={resetToFactory}
-              className="flex items-center gap-2 px-4 py-2 rounded-full border border-zinc-800 text-zinc-500 hover:text-red-600 hover:border-red-600 text-xs font-black uppercase tracking-widest transition-all"
-              title="Restore January 14 version"
-            >
-              <RotateCcw size={14} />
-              <span className="hidden lg:inline">Reset Version</span>
-            </button>
-          )}
 
           <button 
             onClick={() => setIsEditMode(!isEditMode)}
-            className={`flex items-center gap-2 px-5 py-2 rounded-full border transition-all text-xs font-black uppercase tracking-widest shadow-lg ${isEditMode ? 'bg-red-600 border-red-600' : 'border-zinc-800 hover:border-red-600 text-zinc-400'}`}
+            className={`flex items-center gap-2 px-6 py-2 border-2 border-white font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all ${isEditMode ? 'bg-[#ff0038] text-white' : ''}`}
           >
-            {isEditMode ? <Unlock size={16} /> : <Lock size={16} />}
-            <span className="hidden sm:inline">{isEditMode ? 'Editing Active' : 'Admin Lock'}</span>
+            {isEditMode ? <Unlock size={14} /> : <Lock size={14} />}
+            {isEditMode ? 'EDITING' : 'ADMIN'}
           </button>
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <section className="relative h-[95vh] flex items-center justify-center overflow-hidden">
-        <div className="absolute inset-0 z-0">
-          <img 
-            src="https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&q=80&w=1920" 
-            className="w-full h-full object-cover opacity-30 animate-ken-burns grayscale"
-            alt="RHCP Stage"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-[#0a0a0a] via-transparent to-black/80"></div>
-          <div className="liquid-overlay"></div>
+      {/* Massive Hero Section */}
+      <section className="relative h-screen flex flex-col justify-center overflow-hidden bg-black pt-24">
+        {/* Animated Marquee Background */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full opacity-10 pointer-events-none select-none">
+          <div className="marquee-text font-bangers text-[20vw] leading-none text-white text-outline">
+            FUNKY MONKS FUNKY MONKS FUNKY MONKS FUNKY MONKS FUNKY MONKS FUNKY MONKS
+          </div>
+        </div>
+
+        <div className="relative z-10 px-8 lg:px-24">
+          <h2 className="text-[#ff0038] font-space font-black uppercase tracking-[0.5em] text-xs lg:text-sm mb-6 flex items-center gap-4">
+            <span className="h-px w-12 bg-[#ff0038]"></span> 
+            LONG ISLAND'S ULTIMATE RHCP EXPERIENCE
+          </h2>
+          <h1 className="text-8xl lg:text-[14rem] font-bangers leading-[0.85] tracking-tighter transform -rotate-2 mb-8">
+            GIVE IT <span className="text-outline text-white">AWAY</span><br/>
+            <span className="text-[#ff0038]">NOW!</span>
+          </h1>
+          
+          <div className="flex flex-col md:flex-row gap-6 mt-12">
+            <a href="#tour" className="group bg-white text-black px-12 py-5 font-black text-xl uppercase italic border-r-8 border-b-8 border-[#ff0038] hover:translate-x-1 hover:translate-y-1 hover:border-r-4 hover:border-b-4 transition-all flex items-center gap-4">
+              See Live Tour <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
+            </a>
+          </div>
         </div>
         
-        <div className="relative z-10 text-center px-4 max-w-6xl">
-          <h2 className="text-red-600 font-black uppercase tracking-[0.8em] text-[10px] md:text-xs mb-8 animate-pulse">
-            The Ultimate Red Hot Chili Peppers Tribute
-          </h2>
-          <h1 className="text-7xl md:text-[13rem] font-bangers leading-none tracking-tighter mb-10 transform -rotate-3 italic text-white rhcp-glow select-none">
-            GIVE IT <span className="text-red-600">AWAY</span>
-          </h1>
-          <div className="flex flex-wrap justify-center gap-6 mt-16">
-            <a href="#tour" className="bg-red-600 text-white px-16 py-6 font-black text-2xl transform skew-x-[-15deg] hover:bg-white hover:text-red-600 transition-all uppercase shadow-[0_20px_50px_rgba(220,38,38,0.4)]">
-              See Live Dates
-            </a>
+        {/* Hero Decorative Elements */}
+        <div className="absolute bottom-12 right-12 text-right hidden lg:block">
+          <div className="font-space font-black text-[10px] tracking-[1em] text-zinc-700 uppercase mb-4">Established 2024</div>
+          <div className="flex items-center gap-4 justify-end">
+            <div className="w-12 h-12 border-2 border-zinc-800 rounded-full flex items-center justify-center text-zinc-600 font-bold italic text-sm">RHCP</div>
+            <div className="w-12 h-12 bg-zinc-900 rounded-full animate-pulse"></div>
           </div>
         </div>
       </section>
 
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto px-6 space-y-48 py-40">
-        
-        {/* Bio Section */}
-        <section id="bio" className="grid grid-cols-1 lg:grid-cols-2 gap-24 items-center">
-          <div className="relative group">
-            <div className="relative aspect-square overflow-hidden border-[16px] border-zinc-900 rotate-3 group-hover:rotate-0 transition-transform duration-1000 shadow-2xl">
-              <img 
-                src="https://images.unsplash.com/photo-1521334885634-9552f9540abb?auto=format&fit=crop&q=80&w=800" 
-                alt="Soul To Squeeze Band" 
-                className="w-full h-full object-cover grayscale brightness-75 hover:grayscale-0 hover:brightness-100 transition-all duration-1000 scale-110 group-hover:scale-100" 
-              />
-              <div className="absolute inset-0 bg-red-600/5 mix-blend-overlay"></div>
+      {/* Bio / About - Skewed Brutalist Style */}
+      <section id="about" className="relative py-40 overflow-hidden">
+        <div className="skew-section bg-white text-black py-32 -mx-48 px-48">
+          <div className="unskew-content max-w-7xl mx-auto flex flex-col lg:flex-row gap-20 items-center">
+            <div className="flex-1 relative">
+              <div className="rhcp-border-heavy relative overflow-hidden aspect-[4/5] bg-zinc-200">
+                <img 
+                  src="https://images.unsplash.com/photo-1521334885634-9552f9540abb?auto=format&fit=crop&q=80&w=800" 
+                  alt="Band" 
+                  className="w-full h-full object-cover grayscale brightness-50"
+                />
+                <div className="absolute inset-0 bg-[#ff0038]/10 mix-blend-multiply"></div>
+                <div className="absolute -bottom-8 -right-8 font-bangers text-9xl text-white opacity-20 pointer-events-none">SOUL</div>
+              </div>
             </div>
-            <div className="absolute -bottom-10 -right-10 w-48 h-48 bg-red-600 -z-10 rounded-full blur-[100px] opacity-30 animate-pulse"></div>
-          </div>
 
-          <div className="space-y-12">
-            <h2 className="text-6xl md:text-9xl font-bangers text-red-600 transform -rotate-2 italic uppercase leading-none tracking-tight">
-              THE <span className="text-white">SOUL</span>
-            </h2>
-            
-            <div className="relative group/edit">
+            <div className="flex-1 space-y-8">
+              <h2 className="text-7xl lg:text-9xl font-bangers leading-none tracking-tight">
+                THE <span className="text-[#ff0038]">SOUL</span> OF<br/>THE SHRED
+              </h2>
+              
+              <div className="space-y-6">
+                {isEditMode ? (
+                  <div className="space-y-4">
+                    <button onClick={handleGenerateBio} disabled={isGeneratingBio} className="flex items-center gap-2 bg-black text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-[#ff0038] transition-all">
+                      {isGeneratingBio ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+                      AI Magic Writer
+                    </button>
+                    <textarea 
+                      className="w-full bg-zinc-100 border-4 border-black p-8 text-xl font-space font-bold leading-relaxed focus:ring-0 focus:outline-none min-h-[250px]"
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                    />
+                  </div>
+                ) : (
+                  <p className="text-2xl lg:text-3xl font-space font-bold leading-tight uppercase tracking-tight text-black">
+                    "{bio}"
+                  </p>
+                )}
+              </div>
+
+              <div className="flex gap-4">
+                {[Instagram, Facebook, Youtube, Tiktok].map((Icon, i) => (
+                  <a key={i} href="#" className="w-14 h-14 border-4 border-black flex items-center justify-center hover:bg-[#ff0038] hover:text-white transition-all">
+                    <Icon size={24} />
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Dynamic Content Sections */}
+      <main className="max-w-7xl mx-auto px-8 space-y-48 py-40">
+        {blocks.map((block, idx) => (
+          <div key={block.id} className={`flex flex-col ${idx % 2 !== 0 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-20 items-center`}>
+            <div className="flex-1 space-y-8 w-full">
               {isEditMode ? (
-                <div className="space-y-4">
-                  <button 
-                    onClick={handleGenerateBio}
-                    disabled={isGeneratingBio}
-                    className="flex items-center gap-2 bg-red-600/20 text-red-600 px-4 py-2 rounded font-black text-[10px] uppercase tracking-widest border border-red-600/30 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
-                  >
-                    {isGeneratingBio ? <Loader2 className="animate-spin" size={12} /> : <Sparkles size={12} />}
-                    Magic Write Bio
-                  </button>
-                  <textarea 
-                    className="w-full bg-zinc-900/50 border-2 border-dashed border-red-600/30 p-8 text-xl leading-relaxed text-zinc-300 min-h-[300px] outline-none font-light focus:border-red-600 transition-all"
-                    value={bio}
-                    onChange={(e) => setBio(e.target.value)}
+                <div className="p-8 bg-zinc-900 border-l-8 border-[#ff0038] space-y-6 shadow-2xl">
+                  <input 
+                    className="text-4xl font-bangers bg-transparent border-b-2 border-white w-full outline-none uppercase italic"
+                    value={block.title}
+                    onChange={(e) => updateBlock(block.id, 'title', e.target.value)}
+                    placeholder="Title"
                   />
+                  {block.type === 'text' ? (
+                    <textarea 
+                      className="w-full bg-black/50 border-2 border-zinc-800 p-6 text-lg font-space outline-none min-h-[200px]"
+                      value={block.body}
+                      onChange={(e) => updateBlock(block.id, 'body', e.target.value)}
+                    />
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="flex justify-between items-center">
+                        <label className="text-[10px] font-black tracking-widest uppercase opacity-50">IMAGE URL</label>
+                        <button 
+                          onClick={() => handleGeneratePoster(block.id, block.title)} 
+                          className="flex items-center gap-2 text-[#ff0038] font-black text-[10px] uppercase"
+                          disabled={generatingPosterId === block.id}
+                        >
+                          {generatingPosterId === block.id ? <Loader2 className="animate-spin" size={12} /> : <Sparkles size={12} />}
+                          AI GEN POSTER
+                        </button>
+                      </div>
+                      <input 
+                        className="w-full bg-black p-4 border border-zinc-800 font-mono text-xs" 
+                        value={block.body} 
+                        onChange={(e) => updateBlock(block.id, 'body', e.target.value)} 
+                      />
+                    </div>
+                  )}
+                  <button onClick={() => setBlocks(blocks.filter(b => b.id !== block.id))} className="text-red-600 font-black text-xs uppercase flex items-center gap-2">
+                    <Trash2 size={14} /> Remove Block
+                  </button>
                 </div>
               ) : (
-                <p className="text-2xl md:text-4xl leading-relaxed font-light text-zinc-400 italic font-serif border-l-8 border-red-600 pl-10">
-                  "{bio}"
-                </p>
+                <>
+                  <h3 className="text-6xl lg:text-9xl font-bangers uppercase tracking-tighter leading-[0.9]">
+                    {block.title.split(' ').map((word, i) => i === 1 ? <span key={i} className="text-[#ff0038]">{word} </span> : word + ' ')}
+                  </h3>
+                  {block.type === 'text' && <p className="text-xl lg:text-2xl font-space font-medium text-zinc-400 max-w-xl">{block.body}</p>}
+                </>
               )}
             </div>
 
-            <div className="flex gap-8 pt-6">
-              {[Instagram, Facebook, Youtube, Tiktok].map((Icon, i) => (
-                <a key={i} href="#" className="w-16 h-16 rounded-full border-2 border-zinc-800 flex items-center justify-center hover:bg-red-600 hover:border-red-600 transition-all group shadow-xl">
-                  <Icon size={28} className="group-hover:scale-110 transition-transform" />
-                </a>
-              ))}
+            <div className="flex-1 w-full aspect-square md:aspect-video bg-zinc-950 rhcp-border-heavy group relative overflow-hidden">
+              {block.type === 'image' ? (
+                <img src={block.body} alt={block.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale group-hover:grayscale-0" />
+              ) : (
+                <div className="w-full h-full flex items-center justify-center opacity-10 group-hover:opacity-100 group-hover:text-[#ff0038] transition-all">
+                  <Music size={120} />
+                </div>
+              )}
+              <div className="absolute top-4 left-4 bg-white text-black px-4 py-1 font-black text-xs uppercase tracking-widest italic shadow-xl">
+                {block.type} BLOCK
+              </div>
             </div>
           </div>
-        </section>
+        ))}
 
-        {/* Dynamic Content Blocks */}
-        <section className="space-y-48">
-          {blocks.map((block, idx) => (
-            <div key={block.id} className={`flex flex-col ${idx % 2 !== 0 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-24 items-center`}>
-              <div className="flex-1 space-y-10 w-full">
-                {isEditMode ? (
-                  <div className="space-y-6 p-10 bg-zinc-900/30 border border-zinc-800 rounded-lg shadow-2xl">
-                    <input 
-                      className="text-4xl font-bangers bg-transparent border-b border-red-600 w-full outline-none uppercase italic text-red-600"
-                      value={block.title}
-                      onChange={(e) => updateBlock(block.id, 'title', e.target.value)}
-                      placeholder="Section Title"
-                    />
-                    {block.type === 'text' ? (
-                      <textarea 
-                        className="w-full bg-black/40 border-2 border-dashed border-zinc-800 p-8 text-lg outline-none min-h-[250px] text-zinc-300 focus:border-red-600 transition-all"
-                        value={block.body}
-                        onChange={(e) => updateBlock(block.id, 'body', e.target.value)}
-                        placeholder="Section content..."
-                      />
-                    ) : (
-                      <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                          <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Image Content</label>
-                          <button 
-                            onClick={() => handleGeneratePoster(block.id, block.title)}
-                            disabled={generatingPosterId === block.id}
-                            className="flex items-center gap-2 text-red-600 font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors disabled:opacity-50"
-                          >
-                            {generatingPosterId === block.id ? <Loader2 className="animate-spin" size={12} /> : <Sparkles size={12} />}
-                            AI Poster Gen
-                          </button>
-                        </div>
-                        <input 
-                          className="w-full bg-black/40 border border-zinc-800 p-5 text-sm outline-none font-mono text-red-400 focus:border-red-600"
-                          value={block.body}
-                          onChange={(e) => updateBlock(block.id, 'body', e.target.value)}
-                          placeholder="URL or generated data..."
-                        />
-                      </div>
-                    )}
-                    <button onClick={() => removeBlock(block.id)} className="flex items-center gap-2 text-red-600 font-black uppercase text-xs hover:text-white transition-colors group">
-                      <Trash2 size={16} className="group-hover:rotate-12 transition-transform" /> Delete Block
-                    </button>
-                  </div>
-                ) : (
-                  <>
-                    <h3 className="text-5xl md:text-8xl font-bangers uppercase italic tracking-tighter text-white leading-tight">
-                      {block.title.split(' ').map((word, i) => i === 1 ? <span key={i} className="text-red-600">{word} </span> : word + ' ')}
-                    </h3>
-                    {block.type === 'text' && <p className="text-2xl text-zinc-500 leading-relaxed font-light">{block.body}</p>}
-                  </>
-                )}
-              </div>
-              
-              <div className="flex-1 w-full aspect-video bg-zinc-950 border border-zinc-900 flex items-center justify-center relative overflow-hidden group rounded shadow-[0_30px_70px_rgba(0,0,0,0.6)]">
-                {block.type === 'image' ? (
-                  <img src={block.body} alt={block.title} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-1000 scale-105 group-hover:scale-100" />
-                ) : (
-                  <div className="flex flex-col items-center gap-6 opacity-20 group-hover:opacity-100 group-hover:text-red-600 transition-all">
-                    <Music size={120} className="animate-spin-slow" />
-                    <span className="font-bangers text-3xl italic tracking-widest">FUNK VIBES</span>
-                  </div>
-                )}
-                <div className="absolute inset-0 bg-red-600/5 mix-blend-color group-hover:bg-transparent transition-colors"></div>
-              </div>
-            </div>
-          ))}
+        {isEditMode && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <button onClick={() => setBlocks([...blocks, { id: Date.now().toString(), type: 'text', title: 'NEW SECTION', body: 'Funk text here...' }])} className="border-4 border-dashed border-zinc-800 py-12 flex flex-col items-center gap-4 text-zinc-600 hover:text-white hover:border-[#ff0038] transition-all font-black uppercase tracking-widest bg-zinc-950/50">
+              <Plus size={40} /> Add Text
+            </button>
+            <button onClick={() => setBlocks([...blocks, { id: Date.now().toString(), type: 'image', title: 'NEW IMAGE', body: 'https://images.unsplash.com/photo-1514525253361-bee8a197c9c4' }])} className="border-4 border-dashed border-zinc-800 py-12 flex flex-col items-center gap-4 text-zinc-600 hover:text-white hover:border-[#ff0038] transition-all font-black uppercase tracking-widest bg-zinc-950/50">
+              <ImageIcon size={40} /> Add Image
+            </button>
+          </div>
+        )}
 
-          {isEditMode && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-12 pt-12">
-              <button 
-                onClick={addTextBlock}
-                className="w-full border-4 border-dashed border-zinc-900 py-16 flex flex-col items-center gap-6 text-zinc-700 hover:text-red-600 hover:border-red-600 transition-all uppercase font-black tracking-[0.4em] bg-zinc-950 group shadow-lg"
-              >
-                <Plus size={52} className="group-hover:scale-110 transition-transform" />
-                Add Text Section
-              </button>
-              <button 
-                onClick={addImageBlock}
-                className="w-full border-4 border-dashed border-zinc-900 py-16 flex flex-col items-center gap-6 text-zinc-700 hover:text-red-600 hover:border-red-600 transition-all uppercase font-black tracking-[0.4em] bg-zinc-950 group shadow-lg"
-              >
-                <ImageIcon size={52} className="group-hover:scale-110 transition-transform" />
-                Add Image Section
-              </button>
-            </div>
-          )}
-        </section>
-
-        {/* Tour Section */}
-        <section id="tour" className="scroll-mt-32">
-          <div className="flex flex-col md:flex-row justify-between items-end gap-12 mb-24">
-            <h3 className="text-6xl md:text-[11rem] font-bangers text-white uppercase italic tracking-tighter leading-none rhcp-glow">
-              ON THE <span className="text-red-600">ROAD</span>
+        {/* Tour Section - Brutalist Table */}
+        <section id="tour" className="space-y-16">
+          <div className="flex flex-col lg:flex-row justify-between items-end gap-10">
+            <h3 className="text-7xl lg:text-[12rem] font-bangers uppercase tracking-tighter leading-none italic text-white shadow-[#ff0038] drop-shadow-[5px_5px_0px_rgba(255,0,56,1)]">
+              ON THE <span className="text-[#ff0038]">ROAD</span>
             </h3>
-            <div className="bg-red-600 text-white px-10 py-4 font-black text-xs uppercase italic tracking-[0.4em] mb-4 transform skew-x-[-10deg] shadow-lg">
-              Live Odyssey 2026
+            <div className="bg-[#eaff00] text-black px-8 py-3 font-black text-xs uppercase italic tracking-widest transform rotate-3 shadow-lg">
+              CALIFORNIA FUNK TOUR 2026
             </div>
           </div>
 
-          <div className="bg-zinc-950 border border-zinc-900 divide-y divide-zinc-900 shadow-3xl overflow-hidden rounded-sm">
+          <div className="bg-zinc-950 border-4 border-white shadow-[12px_12px_0px_rgba(255,0,56,1)]">
             {tour.map(t => (
-              <div key={t.id} className="flex flex-col md:flex-row items-center justify-between p-14 hover:bg-red-600/[0.03] transition-all group">
+              <div key={t.id} className="border-b-4 border-zinc-900 last:border-0 hover:bg-[#ff0038]/5 transition-colors p-8 lg:p-12 flex flex-col md:flex-row items-center justify-between gap-10 group">
                 {isEditMode ? (
-                  <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-6">
-                    <input className="bg-zinc-900 p-5 font-black outline-none focus:ring-2 focus:ring-red-600 text-red-600 uppercase" value={t.date} onChange={e => updateTour(t.id, 'date', e.target.value)} placeholder="Date" />
-                    <input className="bg-zinc-900 p-5 font-bold outline-none focus:ring-2 focus:ring-red-600" value={t.venue} onChange={e => updateTour(t.id, 'venue', e.target.value)} placeholder="Venue" />
-                    <input className="bg-zinc-900 p-5 outline-none focus:ring-2 focus:ring-red-600" value={t.location} onChange={e => updateTour(t.id, 'location', e.target.value)} placeholder="Location" />
-                    <div className="flex gap-4">
-                      <input className="bg-zinc-900 p-5 flex-1 text-xs outline-none focus:ring-2 focus:ring-red-600 font-mono" value={t.link} onChange={e => updateTour(t.id, 'link', e.target.value)} placeholder="Tickets Link" />
-                      <button onClick={() => removeTour(t.id)} className="text-red-600 p-2 hover:bg-red-600/10 rounded-full transition-colors"><Trash2 size={24} /></button>
+                  <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <input className="bg-black border-2 border-zinc-800 p-4 font-black text-[#ff0038] uppercase" value={t.date} onChange={e => updateTour(t.id, 'date', e.target.value)} />
+                    <input className="bg-black border-2 border-zinc-800 p-4 font-bold" value={t.venue} onChange={e => updateTour(t.id, 'venue', e.target.value)} />
+                    <input className="bg-black border-2 border-zinc-800 p-4" value={t.location} onChange={e => updateTour(t.id, 'location', e.target.value)} />
+                    <div className="flex gap-2">
+                      <input className="bg-black border-2 border-zinc-800 p-4 flex-1 text-xs" value={t.link} onChange={e => updateTour(t.id, 'link', e.target.value)} />
+                      <button onClick={() => setTour(tour.filter(item => item.id !== t.id))} className="text-red-600"><Trash2 /></button>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <div className="flex flex-col md:flex-row items-center gap-16 text-center md:text-left">
-                      <div className="text-6xl font-black text-red-600 uppercase italic tracking-tighter min-w-[180px] group-hover:scale-110 transition-transform">{t.date}</div>
-                      <div className="space-y-3">
-                        <h4 className="text-4xl md:text-5xl font-black uppercase tracking-tighter text-white group-hover:text-red-600 transition-colors">{t.venue}</h4>
-                        <div className="flex items-center justify-center md:justify-start gap-3 text-xs font-black text-zinc-600 uppercase tracking-[0.3em]">
-                          <MapPin size={16} className="text-red-600" /> {t.location}
+                    <div className="flex flex-col md:flex-row items-center gap-12 flex-1">
+                      <div className="text-6xl font-bangers text-[#ff0038] tracking-tighter group-hover:scale-110 transition-transform">{t.date}</div>
+                      <div className="space-y-1">
+                        <h4 className="text-3xl lg:text-5xl font-bangers uppercase tracking-tighter">{t.venue}</h4>
+                        <div className="flex items-center gap-2 text-zinc-500 font-space font-black uppercase text-[10px] tracking-[0.3em]">
+                          <MapPin size={12} className="text-[#ff0038]" /> {t.location}
                         </div>
                       </div>
                     </div>
-                    <a 
-                      href={t.link} 
-                      target="_blank" 
-                      className="mt-12 md:mt-0 bg-red-600 text-white px-16 py-6 font-black uppercase transform skew-x-[-15deg] hover:bg-white hover:text-red-600 transition-all shadow-2xl flex items-center gap-3 active:scale-95"
-                    >
-                      Tickets <ExternalLink size={18} />
+                    <a href={t.link} target="_blank" className="bg-white text-black px-12 py-4 font-black uppercase text-sm border-r-4 border-b-4 border-[#ff0038] hover:bg-[#ff0038] hover:text-white transition-all flex items-center gap-3">
+                      Get Tickets <ExternalLink size={16} />
                     </a>
                   </>
                 )}
@@ -419,20 +347,19 @@ export default function App() {
             ))}
             
             {isEditMode && (
-              <button 
-                onClick={addTourDate}
-                className="w-full p-14 flex items-center justify-center gap-6 text-zinc-800 hover:text-red-600 transition-colors font-black uppercase tracking-[0.5em] bg-zinc-900/10 group"
-              >
-                <Plus size={32} className="group-hover:scale-110 transition-transform" /> Add Performance
+              <button onClick={() => setTour([...tour, { id: Date.now().toString(), date: 'TBA', venue: 'NEW VENUE', location: 'CITY, ST', link: '#' }])} className="w-full p-8 text-zinc-700 hover:text-white transition-all font-black uppercase tracking-widest bg-black/50 border-t-4 border-zinc-900">
+                + ADD PERFORMANCE
               </button>
             )}
           </div>
         </section>
 
-        {/* Media Gallery Section */}
+        {/* Media Sights - Brutalist Cards */}
         <section id="media" className="space-y-24">
           <div className="text-center">
-            <h3 className="text-6xl md:text-9xl font-bangers uppercase tracking-[0.3em] italic text-white/90">SIGHTS <span className="text-red-600">&</span> SOUNDS</h3>
+            <h3 className="text-6xl lg:text-[10rem] font-bangers uppercase tracking-tighter leading-none">
+              SIGHTS <span className="text-[#ff0038]">&</span> SOUNDS
+            </h3>
           </div>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
@@ -444,60 +371,59 @@ export default function App() {
               'https://images.unsplash.com/photo-1459749411177-0421800673d6',
               'https://images.unsplash.com/photo-1429962714451-bb934ecbb4ec'
             ].map((url, i) => (
-              <div key={i} className="aspect-square bg-zinc-950 border border-zinc-900 overflow-hidden group relative shadow-3xl rounded-sm">
-                <img 
-                  src={`${url}?auto=format&fit=crop&q=80&w=800`} 
-                  alt={`Live performance ${i+1}`} 
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-110 transition-all duration-1000"
-                />
-                <div className="absolute inset-0 bg-red-600/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center pointer-events-none">
-                  <div className="w-16 h-16 bg-white/10 backdrop-blur-sm rounded-full flex items-center justify-center">
-                    <Plus size={32} className="text-white scale-75 group-hover:scale-100 transition-transform" />
-                  </div>
-                </div>
+              <div key={i} className="aspect-square border-4 border-white bg-zinc-900 group relative hover-lift cursor-crosshair">
+                <img src={`${url}?auto=format&fit=crop&q=80&w=800`} className="w-full h-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:brightness-75" />
+                <div className="absolute inset-0 border-8 border-transparent group-hover:border-[#ff0038]/50 transition-all pointer-events-none"></div>
+                <div className="absolute top-2 right-2 bg-[#ff0038] text-white p-1 text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity">LIVE_SHOT_{i+1}</div>
               </div>
             ))}
           </div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="bg-[#050505] py-48 border-t border-zinc-900 relative overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full max-w-6xl h-px bg-gradient-to-r from-transparent via-red-600 to-transparent"></div>
-        
-        <div className="max-w-7xl mx-auto px-6 flex flex-col items-center gap-20 text-center">
-          <div className="flex flex-col items-center gap-10">
-            <div className="w-24 h-24 bg-red-600 rounded-full flex items-center justify-center text-white font-black text-6xl transform rotate-45 select-none animate-spin-slow shadow-[0_0_60px_rgba(220,38,38,0.5)]">
+      {/* Footer - High Contrast */}
+      <footer className="bg-white text-black py-40 border-t-8 border-[#ff0038] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-8 flex flex-col items-center text-center gap-16 relative z-10">
+          <div className="space-y-4">
+            <div className="w-20 h-20 bg-[#ff0038] mx-auto flex items-center justify-center text-white font-black text-5xl hover:rotate-90 transition-transform duration-500 cursor-pointer">
               *
             </div>
-            <h3 className="text-6xl md:text-8xl font-bangers tracking-widest text-white italic uppercase rhcp-glow">Soul To Squeeze</h3>
+            <h3 className="text-7xl lg:text-9xl font-bangers tracking-tight uppercase leading-none">SOUL TO SQUEEZE</h3>
           </div>
           
-          <nav className="flex flex-wrap justify-center gap-x-16 gap-y-10 font-black uppercase text-xs tracking-[0.5em] text-zinc-600">
-            <a href="#bio" className="hover:text-white transition-colors">Biography</a>
-            <a href="#tour" className="hover:text-white transition-colors">Appearances</a>
-            <a href="#media" className="hover:text-white transition-colors">Press Kit</a>
-            <a href="#" className="hover:text-white transition-colors">Booking</a>
+          <nav className="flex flex-wrap justify-center gap-x-12 gap-y-6 font-black uppercase text-xs tracking-[0.4em]">
+            <a href="#about" className="hover:text-[#ff0038] transition-colors">BIO</a>
+            <a href="#tour" className="hover:text-[#ff0038] transition-colors">TOUR</a>
+            <a href="#media" className="hover:text-[#ff0038] transition-colors">SIGHTS</a>
+            <a href="mailto:booking@soultosqueeze.com" className="hover:text-[#ff0038] transition-colors">BOOKING</a>
           </nav>
 
-          <div className="space-y-6 pt-10">
-            <p className="text-zinc-800 font-black uppercase tracking-[1.5em] text-[10px] opacity-40">Official Tribute Experience</p>
-            <div className="flex items-center justify-center gap-5 text-zinc-900 text-[10px] font-black tracking-[0.3em] uppercase">
-              <span>Long Island, NY</span>
-              <div className="w-1 h-1 bg-zinc-900 rounded-full"></div>
-              <span>© 2026</span>
-              <div className="w-1 h-1 bg-zinc-900 rounded-full"></div>
-              <span>Funky Monks Prod.</span>
+          <div className="space-y-4 pt-8">
+            <div className="flex items-center justify-center gap-6 font-space font-black text-[10px] tracking-widest uppercase">
+              <span>LONG ISLAND, NY</span>
+              <div className="w-2 h-2 bg-[#ff0038] rotate-45"></div>
+              <span>EST. 2024</span>
+              <div className="w-2 h-2 bg-black rotate-45"></div>
+              <span>RHCP TRIBUTE</span>
             </div>
+          </div>
+        </div>
+
+        {/* Footer Marquee Background */}
+        <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full opacity-5 pointer-events-none -rotate-12 select-none">
+          <div className="marquee-text font-bangers text-[30vw] leading-none text-black">
+            FUNK NEVER DIES FUNK NEVER DIES FUNK NEVER DIES
           </div>
         </div>
       </footer>
 
-      {/* Persistence Notice */}
+      {/* Floating Save Notice */}
       {isEditMode && (
-        <div className="fixed bottom-6 right-6 z-[60] bg-zinc-900 border border-red-600/50 px-6 py-4 rounded-lg shadow-2xl flex items-center gap-3 animate-in slide-in-from-bottom-4 duration-500">
-          <Save size={18} className="text-red-600" />
-          <span className="text-[10px] font-black uppercase tracking-widest">Autosaving Changes...</span>
+        <div className="fixed bottom-8 right-8 z-[110] bg-white border-4 border-black text-black px-6 py-4 flex items-center gap-4 animate-bounce shadow-2xl">
+          <div className="bg-[#ff0038] p-2 text-white">
+            <Save size={20} />
+          </div>
+          <span className="font-space font-black text-xs uppercase tracking-widest">LIVE AUTOSAVE ON</span>
         </div>
       )}
     </div>
