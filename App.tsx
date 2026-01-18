@@ -3,16 +3,17 @@ import {
   Trash2, MapPin, Lock, Unlock, Activity, Plus,
   Instagram, Facebook, Youtube, Disc as Tiktok, 
   Music, Image as ImageIcon, ExternalLink, RotateCcw, Save,
-  Sparkles, Loader2, ArrowRight, Zap, Menu, X
+  Sparkles, Loader2, ArrowRight, Zap, Globe, Share2, Link as LinkIcon
 } from 'lucide-react';
 import { generateBandBio, generateBandPoster } from './geminiService.ts';
 
 // --- Types ---
 type ContentBlock = {
   id: string;
-  type: 'text' | 'image';
+  type: 'text' | 'image' | 'link';
   title: string;
   body: string;
+  metadata?: string; // Used for link URLs
 };
 
 type TourDate = {
@@ -23,13 +24,24 @@ type TourDate = {
   link: string;
 };
 
+type MediaItem = {
+  id: string;
+  url: string;
+  caption?: string;
+};
+
+type SocialLink = {
+  id: string;
+  platform: string;
+  url: string;
+};
+
 // --- Initial Data ---
 const INITIAL_BIO = "Soul To Squeeze is Long Island's rawest tribute to the Red Hot Chili Peppers. We channel the chaotic energy of Flea, the spiritual flow of Kiedis, and the cosmic riffs of Frusciante to bring you a pure, unfiltered funk-rock explosion.";
 
 const INITIAL_TOUR: TourDate[] = [
   { id: '1', date: 'FEB 01', venue: "Mulcahy's", location: 'Wantagh, NY', link: 'https://muls.com/' },
   { id: '2', date: 'FEB 14', venue: 'The Warehouse', location: 'Amityville, NY', link: '#' },
-  { id: '3', date: 'MAR 22', venue: 'Revolution Bar', location: 'Amityville, NY', link: '#' },
 ];
 
 const INITIAL_BLOCKS: ContentBlock[] = [
@@ -37,14 +49,27 @@ const INITIAL_BLOCKS: ContentBlock[] = [
     id: 'b1', 
     type: 'text', 
     title: 'THE FUNK IS REAL', 
-    body: 'We don\'t just cover the hits. We cover the deep cuts, the B-sides, and the live jams that made the Peppers the greatest band to ever emerge from the LA underground.' 
+    body: 'We don\'t just cover the hits. We cover the deep cuts, the B-sides, and the live jams.' 
   },
   {
     id: 'b2',
-    type: 'image',
-    title: 'BLOOD SUGAR SEX MAGIK',
-    body: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b?auto=format&fit=crop&q=80&w=1200'
+    type: 'link',
+    title: 'OFFICIAL MERCH STORE',
+    body: 'GET THE GEAR',
+    metadata: 'https://example.com/merch'
   }
+];
+
+const INITIAL_MEDIA: MediaItem[] = [
+  { id: 'm1', url: 'https://images.unsplash.com/photo-1470225620780-dba8ba36b745' },
+  { id: 'm2', url: 'https://images.unsplash.com/photo-1493225255756-d9584f8606e9' },
+  { id: 'm3', url: 'https://images.unsplash.com/photo-1514525253361-bee8a197c9c4' },
+];
+
+const INITIAL_SOCIALS: SocialLink[] = [
+  { id: 's1', platform: 'Instagram', url: '#' },
+  { id: 's2', platform: 'Facebook', url: '#' },
+  { id: 's3', platform: 'YouTube', url: '#' },
 ];
 
 export default function App() {
@@ -52,33 +77,39 @@ export default function App() {
   const [bio, setBio] = useState(INITIAL_BIO);
   const [blocks, setBlocks] = useState<ContentBlock[]>(INITIAL_BLOCKS);
   const [tour, setTour] = useState<TourDate[]>(INITIAL_TOUR);
+  const [media, setMedia] = useState<MediaItem[]>(INITIAL_MEDIA);
+  const [socials, setSocials] = useState<SocialLink[]>(INITIAL_SOCIALS);
   const [hasLoaded, setHasLoaded] = useState(false);
   const [isGeneratingBio, setIsGeneratingBio] = useState(false);
   const [generatingPosterId, setGeneratingPosterId] = useState<string | null>(null);
 
+  // --- Persistence ---
   useEffect(() => {
-    const savedBio = localStorage.getItem('sts_bio_v2');
-    const savedBlocks = localStorage.getItem('sts_blocks_v2');
-    const savedTour = localStorage.getItem('sts_tour_v2');
+    const sBio = localStorage.getItem('sts_v3_bio');
+    const sBlocks = localStorage.getItem('sts_v3_blocks');
+    const sTour = localStorage.getItem('sts_v3_tour');
+    const sMedia = localStorage.getItem('sts_v3_media');
+    const sSocials = localStorage.getItem('sts_v3_socials');
 
-    if (savedBio) setBio(savedBio);
-    if (savedBlocks) {
-      try { setBlocks(JSON.parse(savedBlocks)); } catch (e) { setBlocks(INITIAL_BLOCKS); }
-    }
-    if (savedTour) {
-      try { setTour(JSON.parse(savedTour)); } catch (e) { setTour(INITIAL_TOUR); }
-    }
+    if (sBio) setBio(sBio);
+    if (sBlocks) setBlocks(JSON.parse(sBlocks));
+    if (sTour) setTour(JSON.parse(sTour));
+    if (sMedia) setMedia(JSON.parse(sMedia));
+    if (sSocials) setSocials(JSON.parse(sSocials));
     setHasLoaded(true);
   }, []);
 
   useEffect(() => {
     if (hasLoaded) {
-      localStorage.setItem('sts_bio_v2', bio);
-      localStorage.setItem('sts_blocks_v2', JSON.stringify(blocks));
-      localStorage.setItem('sts_tour_v2', JSON.stringify(tour));
+      localStorage.setItem('sts_v3_bio', bio);
+      localStorage.setItem('sts_v3_blocks', JSON.stringify(blocks));
+      localStorage.setItem('sts_v3_tour', JSON.stringify(tour));
+      localStorage.setItem('sts_v3_media', JSON.stringify(media));
+      localStorage.setItem('sts_v3_socials', JSON.stringify(socials));
     }
-  }, [bio, blocks, tour, hasLoaded]);
+  }, [bio, blocks, tour, media, socials, hasLoaded]);
 
+  // --- AI Handlers ---
   const handleGenerateBio = async () => {
     setIsGeneratingBio(true);
     const newBio = await generateBandBio("Soul To Squeeze");
@@ -89,341 +120,334 @@ export default function App() {
   const handleGeneratePoster = async (id: string, title: string) => {
     setGeneratingPosterId(id);
     const posterUrl = await generateBandPoster(title || "RHCP Tribute Poster");
-    if (posterUrl) updateBlock(id, 'body', posterUrl);
+    if (posterUrl) {
+      setBlocks(prev => prev.map(b => b.id === id ? { ...b, body: posterUrl } : b));
+    }
     setGeneratingPosterId(null);
   };
 
-  const updateBlock = (id: string, field: keyof ContentBlock, value: string) => {
-    setBlocks(blocks.map(b => b.id === id ? { ...b, [field]: value } : b));
+  // --- Helpers ---
+  const getIcon = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'instagram': return <Instagram size={20} />;
+      case 'facebook': return <Facebook size={20} />;
+      case 'youtube': return <Youtube size={20} />;
+      case 'tiktok': return <Tiktok size={20} />;
+      default: return <Globe size={20} />;
+    }
   };
-
-  const updateTour = (id: string, field: keyof TourDate, value: string) => {
-    setTour(tour.map(t => t.id === id ? { ...t, [field]: value } : t));
-  };
-
-  if (!hasLoaded) return null;
 
   return (
     <div className="min-h-screen text-white selection:bg-[#ff0038] selection:text-white">
       <div className="scanline"></div>
 
-      {/* Modern Brutalist Nav */}
-      <nav className="fixed top-0 w-full z-[100] bg-black/80 backdrop-blur-xl border-b-4 border-white h-24 flex items-center justify-between px-8">
+      {/* Nav */}
+      <nav className="fixed top-0 w-full z-[100] bg-black/90 backdrop-blur-xl border-b-4 border-white h-24 flex items-center justify-between px-8">
         <div className="flex items-center gap-4">
           <div className="bg-[#ff0038] p-2 rotate-45 border-2 border-white">
             <Zap size={24} className="-rotate-45" />
           </div>
-          <span className="font-bangers text-4xl tracking-tighter uppercase italic leading-none">
+          <span className="font-bangers text-4xl tracking-tighter uppercase italic leading-none hidden sm:block">
             SOUL<span className="text-[#ff0038]">TO</span>SQUEEZE
           </span>
         </div>
 
         <div className="flex items-center gap-6">
-          <div className="hidden lg:flex gap-10 font-black text-[10px] uppercase tracking-[0.3em]">
-            <a href="#about" className="hover:text-[#ff0038] transition-colors">THE VIBE</a>
-            <a href="#tour" className="hover:text-[#ff0038] transition-colors">LIVE DATES</a>
-            <a href="#media" className="hover:text-[#ff0038] transition-colors">SIGHTS</a>
-          </div>
-
           <button 
             onClick={() => setIsEditMode(!isEditMode)}
             className={`flex items-center gap-2 px-6 py-2 border-2 border-white font-black text-[10px] uppercase tracking-widest hover:bg-white hover:text-black transition-all ${isEditMode ? 'bg-[#ff0038] text-white' : ''}`}
           >
             {isEditMode ? <Unlock size={14} /> : <Lock size={14} />}
-            {isEditMode ? 'EDITING' : 'ADMIN'}
+            {isEditMode ? 'EXIT EDITOR' : 'ENTER EDITOR'}
           </button>
         </div>
       </nav>
 
-      {/* Massive Hero Section */}
-      <section className="relative h-screen flex flex-col justify-center overflow-hidden bg-black pt-24">
-        {/* Animated Marquee Background */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full opacity-10 pointer-events-none select-none">
-          <div className="marquee-text font-bangers text-[20vw] leading-none text-white text-outline">
-            FUNKY MONKS FUNKY MONKS FUNKY MONKS FUNKY MONKS FUNKY MONKS FUNKY MONKS
+      {/* Hero */}
+      <section className="relative h-[80vh] flex flex-col justify-center overflow-hidden bg-black pt-24">
+        <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full opacity-5 pointer-events-none select-none">
+          <div className="marquee-text font-bangers text-[25vw] leading-none text-white text-outline">
+            FUNK MONKS FUNK MONKS FUNK MONKS
           </div>
         </div>
-
         <div className="relative z-10 px-8 lg:px-24">
-          <h2 className="text-[#ff0038] font-space font-black uppercase tracking-[0.5em] text-xs lg:text-sm mb-6 flex items-center gap-4">
-            <span className="h-px w-12 bg-[#ff0038]"></span> 
-            LONG ISLAND'S ULTIMATE RHCP EXPERIENCE
-          </h2>
-          <h1 className="text-8xl lg:text-[14rem] font-bangers leading-[0.85] tracking-tighter transform -rotate-2 mb-8">
-            GIVE IT <span className="text-outline text-white">AWAY</span><br/>
-            <span className="text-[#ff0038]">NOW!</span>
+          <h1 className="text-8xl lg:text-[14rem] font-bangers leading-[0.8] tracking-tighter transform -rotate-2">
+            STAY <span className="text-[#ff0038]">FUNKY</span>
           </h1>
-          
-          <div className="flex flex-col md:flex-row gap-6 mt-12">
-            <a href="#tour" className="group bg-white text-black px-12 py-5 font-black text-xl uppercase italic border-r-8 border-b-8 border-[#ff0038] hover:translate-x-1 hover:translate-y-1 hover:border-r-4 hover:border-b-4 transition-all flex items-center gap-4">
-              See Live Tour <ArrowRight size={24} className="group-hover:translate-x-2 transition-transform" />
-            </a>
-          </div>
-        </div>
-        
-        {/* Hero Decorative Elements */}
-        <div className="absolute bottom-12 right-12 text-right hidden lg:block">
-          <div className="font-space font-black text-[10px] tracking-[1em] text-zinc-700 uppercase mb-4">Established 2024</div>
-          <div className="flex items-center gap-4 justify-end">
-            <div className="w-12 h-12 border-2 border-zinc-800 rounded-full flex items-center justify-center text-zinc-600 font-bold italic text-sm">RHCP</div>
-            <div className="w-12 h-12 bg-zinc-900 rounded-full animate-pulse"></div>
-          </div>
         </div>
       </section>
 
-      {/* Bio / About - Skewed Brutalist Style */}
-      <section id="about" className="relative py-40 overflow-hidden">
-        <div className="skew-section bg-white text-black py-32 -mx-48 px-48">
-          <div className="unskew-content max-w-7xl mx-auto flex flex-col lg:flex-row gap-20 items-center">
-            <div className="flex-1 relative">
-              <div className="rhcp-border-heavy relative overflow-hidden aspect-[4/5] bg-zinc-200">
-                <img 
-                  src="https://images.unsplash.com/photo-1521334885634-9552f9540abb?auto=format&fit=crop&q=80&w=800" 
-                  alt="Band" 
-                  className="w-full h-full object-cover grayscale brightness-50"
-                />
-                <div className="absolute inset-0 bg-[#ff0038]/10 mix-blend-multiply"></div>
-                <div className="absolute -bottom-8 -right-8 font-bangers text-9xl text-white opacity-20 pointer-events-none">SOUL</div>
-              </div>
+      {/* Dynamic Content Container */}
+      <main className="max-w-7xl mx-auto px-8 space-y-48 pb-48">
+        
+        {/* Bio + Socials Section */}
+        <section id="about" className="grid grid-cols-1 lg:grid-cols-2 gap-20 items-start">
+          <div className="rhcp-border-heavy relative aspect-square overflow-hidden bg-zinc-900">
+            <img 
+              src="https://images.unsplash.com/photo-1521334885634-9552f9540abb?auto=format&fit=crop&q=80&w=1200" 
+              className="w-full h-full object-cover grayscale brightness-50"
+              alt="Band" 
+            />
+          </div>
+
+          <div className="space-y-12">
+            <div className="space-y-6">
+              <h2 className="text-6xl font-bangers uppercase text-[#ff0038]">THE STORY</h2>
+              {isEditMode ? (
+                <div className="space-y-4">
+                  <button onClick={handleGenerateBio} disabled={isGeneratingBio} className="bg-white text-black px-4 py-2 font-black text-[10px] uppercase tracking-widest flex items-center gap-2 hover:bg-[#ff0038] hover:text-white transition-all">
+                    {isGeneratingBio ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
+                    Regenerate with AI
+                  </button>
+                  <textarea 
+                    className="w-full bg-zinc-900 border-2 border-white p-6 font-space text-xl font-bold leading-relaxed focus:ring-0 focus:outline-none min-h-[200px]"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                  />
+                </div>
+              ) : (
+                <p className="text-2xl font-space font-bold uppercase tracking-tight text-zinc-300">"{bio}"</p>
+              )}
             </div>
 
-            <div className="flex-1 space-y-8">
-              <h2 className="text-7xl lg:text-9xl font-bangers leading-none tracking-tight">
-                THE <span className="text-[#ff0038]">SOUL</span> OF<br/>THE SHRED
-              </h2>
-              
-              <div className="space-y-6">
+            <div className="space-y-6">
+              <h3 className="text-2xl font-bangers uppercase tracking-widest text-zinc-500">CONNECT</h3>
+              <div className="flex flex-wrap gap-4">
+                {socials.map((social) => (
+                  <div key={social.id} className="relative group">
+                    {isEditMode ? (
+                      <div className="flex flex-col gap-2 p-4 bg-zinc-900 border-2 border-white">
+                        <input 
+                          className="bg-black text-[10px] p-2 border border-zinc-700 outline-none" 
+                          value={social.platform} 
+                          placeholder="Platform"
+                          onChange={(e) => setSocials(socials.map(s => s.id === social.id ? {...s, platform: e.target.value} : s))}
+                        />
+                        <input 
+                          className="bg-black text-[10px] p-2 border border-zinc-700 outline-none" 
+                          value={social.url} 
+                          placeholder="Link"
+                          onChange={(e) => setSocials(socials.map(s => s.id === social.id ? {...s, url: e.target.value} : s))}
+                        />
+                        <button onClick={() => setSocials(socials.filter(s => s.id !== social.id))} className="text-[#ff0038] self-end hover:scale-110 transition-transform">
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    ) : (
+                      <a href={social.url} target="_blank" className="w-16 h-16 border-4 border-white flex items-center justify-center hover:bg-[#ff0038] transition-all">
+                        {getIcon(social.platform)}
+                      </a>
+                    )}
+                  </div>
+                ))}
+                {isEditMode && (
+                  <button 
+                    onClick={() => setSocials([...socials, { id: Date.now().toString(), platform: 'Web', url: '#' }])}
+                    className="w-16 h-16 border-4 border-dashed border-zinc-800 flex items-center justify-center text-zinc-800 hover:text-white hover:border-white transition-all"
+                  >
+                    <Plus size={24} />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Modular Content Blocks */}
+        <section className="space-y-48">
+          {blocks.map((block, idx) => (
+            <div key={block.id} className={`flex flex-col ${idx % 2 !== 0 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-20 items-center`}>
+              <div className="flex-1 space-y-8 w-full">
                 {isEditMode ? (
-                  <div className="space-y-4">
-                    <button onClick={handleGenerateBio} disabled={isGeneratingBio} className="flex items-center gap-2 bg-black text-white px-6 py-2 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-[#ff0038] transition-all">
-                      {isGeneratingBio ? <Loader2 className="animate-spin" size={14} /> : <Sparkles size={14} />}
-                      AI Magic Writer
-                    </button>
-                    <textarea 
-                      className="w-full bg-zinc-100 border-4 border-black p-8 text-xl font-space font-bold leading-relaxed focus:ring-0 focus:outline-none min-h-[250px]"
-                      value={bio}
-                      onChange={(e) => setBio(e.target.value)}
+                  <div className="p-8 bg-zinc-900 border-l-8 border-[#ff0038] space-y-6">
+                    <input 
+                      className="text-4xl font-bangers bg-transparent border-b-2 border-white w-full outline-none uppercase italic"
+                      value={block.title}
+                      onChange={(e) => setBlocks(blocks.map(b => b.id === block.id ? {...b, title: e.target.value} : b))}
                     />
+                    {block.type === 'text' && (
+                      <textarea 
+                        className="w-full bg-black/50 border-2 border-zinc-800 p-6 text-lg font-space outline-none min-h-[150px]"
+                        value={block.body}
+                        onChange={(e) => setBlocks(blocks.map(b => b.id === block.id ? {...b, body: e.target.value} : b))}
+                      />
+                    )}
+                    {block.type === 'image' && (
+                      <div className="space-y-4">
+                        <button onClick={() => handleGeneratePoster(block.id, block.title)} className="text-[10px] font-black text-[#ff0038] flex items-center gap-2">
+                          <Sparkles size={12} /> AI GENERATE ART
+                        </button>
+                        <input 
+                          className="w-full bg-black p-4 border border-zinc-800 text-xs font-mono" 
+                          value={block.body} 
+                          onChange={(e) => setBlocks(blocks.map(b => b.id === block.id ? {...b, body: e.target.value} : b))}
+                        />
+                      </div>
+                    )}
+                    {block.type === 'link' && (
+                      <div className="space-y-4">
+                        <input 
+                          className="w-full bg-black p-4 border border-zinc-800 text-lg font-space font-bold uppercase" 
+                          value={block.body} 
+                          placeholder="Button Text"
+                          onChange={(e) => setBlocks(blocks.map(b => b.id === block.id ? {...b, body: e.target.value} : b))}
+                        />
+                        <input 
+                          className="w-full bg-black p-4 border border-zinc-800 text-xs font-mono" 
+                          value={block.metadata} 
+                          placeholder="Destination URL"
+                          onChange={(e) => setBlocks(blocks.map(b => b.id === block.id ? {...b, metadata: e.target.value} : b))}
+                        />
+                      </div>
+                    )}
+                    <button onClick={() => setBlocks(blocks.filter(b => b.id !== block.id))} className="text-[#ff0038] text-xs font-black uppercase flex items-center gap-2">
+                      <Trash2 size={14} /> DELETE BLOCK
+                    </button>
                   </div>
                 ) : (
-                  <p className="text-2xl lg:text-3xl font-space font-bold leading-tight uppercase tracking-tight text-black">
-                    "{bio}"
-                  </p>
+                  <div className="space-y-6">
+                    <h3 className="text-6xl lg:text-9xl font-bangers uppercase tracking-tighter leading-none">{block.title}</h3>
+                    {block.type === 'text' && <p className="text-xl font-space font-medium text-zinc-400">{block.body}</p>}
+                    {block.type === 'link' && (
+                      <a href={block.metadata} target="_blank" className="inline-flex items-center gap-4 bg-[#ff0038] text-white px-10 py-5 font-black uppercase italic text-xl border-r-8 border-b-8 border-white hover:translate-x-1 hover:translate-y-1 hover:border-r-4 hover:border-b-4 transition-all">
+                        {block.body} <LinkIcon size={24} />
+                      </a>
+                    )}
+                  </div>
                 )}
               </div>
 
-              <div className="flex gap-4">
-                {[Instagram, Facebook, Youtube, Tiktok].map((Icon, i) => (
-                  <a key={i} href="#" className="w-14 h-14 border-4 border-black flex items-center justify-center hover:bg-[#ff0038] hover:text-white transition-all">
-                    <Icon size={24} />
-                  </a>
-                ))}
+              <div className="flex-1 w-full aspect-video bg-zinc-950 rhcp-border-heavy relative overflow-hidden group">
+                {block.type === 'image' ? (
+                  <img src={block.body} className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700" alt={block.title} />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center opacity-10 group-hover:opacity-100 group-hover:text-[#ff0038] transition-all">
+                    {block.type === 'link' ? <ExternalLink size={100} /> : <Activity size={100} />}
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-        </div>
-      </section>
+          ))}
 
-      {/* Dynamic Content Sections */}
-      <main className="max-w-7xl mx-auto px-8 space-y-48 py-40">
-        {blocks.map((block, idx) => (
-          <div key={block.id} className={`flex flex-col ${idx % 2 !== 0 ? 'lg:flex-row-reverse' : 'lg:flex-row'} gap-20 items-center`}>
-            <div className="flex-1 space-y-8 w-full">
-              {isEditMode ? (
-                <div className="p-8 bg-zinc-900 border-l-8 border-[#ff0038] space-y-6 shadow-2xl">
-                  <input 
-                    className="text-4xl font-bangers bg-transparent border-b-2 border-white w-full outline-none uppercase italic"
-                    value={block.title}
-                    onChange={(e) => updateBlock(block.id, 'title', e.target.value)}
-                    placeholder="Title"
-                  />
-                  {block.type === 'text' ? (
-                    <textarea 
-                      className="w-full bg-black/50 border-2 border-zinc-800 p-6 text-lg font-space outline-none min-h-[200px]"
-                      value={block.body}
-                      onChange={(e) => updateBlock(block.id, 'body', e.target.value)}
-                    />
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="flex justify-between items-center">
-                        <label className="text-[10px] font-black tracking-widest uppercase opacity-50">IMAGE URL</label>
-                        <button 
-                          onClick={() => handleGeneratePoster(block.id, block.title)} 
-                          className="flex items-center gap-2 text-[#ff0038] font-black text-[10px] uppercase"
-                          disabled={generatingPosterId === block.id}
-                        >
-                          {generatingPosterId === block.id ? <Loader2 className="animate-spin" size={12} /> : <Sparkles size={12} />}
-                          AI GEN POSTER
-                        </button>
-                      </div>
-                      <input 
-                        className="w-full bg-black p-4 border border-zinc-800 font-mono text-xs" 
-                        value={block.body} 
-                        onChange={(e) => updateBlock(block.id, 'body', e.target.value)} 
-                      />
-                    </div>
-                  )}
-                  <button onClick={() => setBlocks(blocks.filter(b => b.id !== block.id))} className="text-red-600 font-black text-xs uppercase flex items-center gap-2">
-                    <Trash2 size={14} /> Remove Block
-                  </button>
-                </div>
-              ) : (
-                <>
-                  <h3 className="text-6xl lg:text-9xl font-bangers uppercase tracking-tighter leading-[0.9]">
-                    {block.title.split(' ').map((word, i) => i === 1 ? <span key={i} className="text-[#ff0038]">{word} </span> : word + ' ')}
-                  </h3>
-                  {block.type === 'text' && <p className="text-xl lg:text-2xl font-space font-medium text-zinc-400 max-w-xl">{block.body}</p>}
-                </>
-              )}
+          {isEditMode && (
+            <div className="flex flex-wrap gap-4 pt-12">
+              <button onClick={() => setBlocks([...blocks, { id: Date.now().toString(), type: 'text', title: 'NEW TEXT', body: 'Add your story...' }])} className="flex-1 border-4 border-dashed border-zinc-800 py-10 font-black uppercase tracking-widest hover:border-white transition-all">
+                + Text Block
+              </button>
+              <button onClick={() => setBlocks([...blocks, { id: Date.now().toString(), type: 'image', title: 'NEW IMAGE', body: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b' }])} className="flex-1 border-4 border-dashed border-zinc-800 py-10 font-black uppercase tracking-widest hover:border-white transition-all">
+                + Image Block
+              </button>
+              <button onClick={() => setBlocks([...blocks, { id: Date.now().toString(), type: 'link', title: 'NEW LINK', body: 'CLICK HERE', metadata: '#' }])} className="flex-1 border-4 border-dashed border-zinc-800 py-10 font-black uppercase tracking-widest hover:border-white transition-all">
+                + Action Link
+              </button>
             </div>
+          )}
+        </section>
 
-            <div className="flex-1 w-full aspect-square md:aspect-video bg-zinc-950 rhcp-border-heavy group relative overflow-hidden">
-              {block.type === 'image' ? (
-                <img src={block.body} alt={block.title} className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale group-hover:grayscale-0" />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center opacity-10 group-hover:opacity-100 group-hover:text-[#ff0038] transition-all">
-                  <Music size={120} />
-                </div>
-              )}
-              <div className="absolute top-4 left-4 bg-white text-black px-4 py-1 font-black text-xs uppercase tracking-widest italic shadow-xl">
-                {block.type} BLOCK
-              </div>
-            </div>
-          </div>
-        ))}
-
-        {isEditMode && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <button onClick={() => setBlocks([...blocks, { id: Date.now().toString(), type: 'text', title: 'NEW SECTION', body: 'Funk text here...' }])} className="border-4 border-dashed border-zinc-800 py-12 flex flex-col items-center gap-4 text-zinc-600 hover:text-white hover:border-[#ff0038] transition-all font-black uppercase tracking-widest bg-zinc-950/50">
-              <Plus size={40} /> Add Text
-            </button>
-            <button onClick={() => setBlocks([...blocks, { id: Date.now().toString(), type: 'image', title: 'NEW IMAGE', body: 'https://images.unsplash.com/photo-1514525253361-bee8a197c9c4' }])} className="border-4 border-dashed border-zinc-800 py-12 flex flex-col items-center gap-4 text-zinc-600 hover:text-white hover:border-[#ff0038] transition-all font-black uppercase tracking-widest bg-zinc-950/50">
-              <ImageIcon size={40} /> Add Image
-            </button>
-          </div>
-        )}
-
-        {/* Tour Section - Brutalist Table */}
+        {/* Tour Section */}
         <section id="tour" className="space-y-16">
-          <div className="flex flex-col lg:flex-row justify-between items-end gap-10">
-            <h3 className="text-7xl lg:text-[12rem] font-bangers uppercase tracking-tighter leading-none italic text-white shadow-[#ff0038] drop-shadow-[5px_5px_0px_rgba(255,0,56,1)]">
-              ON THE <span className="text-[#ff0038]">ROAD</span>
-            </h3>
-            <div className="bg-[#eaff00] text-black px-8 py-3 font-black text-xs uppercase italic tracking-widest transform rotate-3 shadow-lg">
-              CALIFORNIA FUNK TOUR 2026
-            </div>
-          </div>
+          <h3 className="text-7xl lg:text-[10rem] font-bangers uppercase tracking-tighter leading-none italic shadow-[#ff0038] drop-shadow-[5px_5px_0px_white]">
+            ON THE <span className="text-[#ff0038]">ROAD</span>
+          </h3>
 
-          <div className="bg-zinc-950 border-4 border-white shadow-[12px_12px_0px_rgba(255,0,56,1)]">
+          <div className="bg-zinc-950 border-4 border-white">
             {tour.map(t => (
-              <div key={t.id} className="border-b-4 border-zinc-900 last:border-0 hover:bg-[#ff0038]/5 transition-colors p-8 lg:p-12 flex flex-col md:flex-row items-center justify-between gap-10 group">
+              <div key={t.id} className="border-b-4 border-zinc-900 last:border-0 p-8 lg:p-12 flex flex-col md:flex-row items-center justify-between gap-10">
                 {isEditMode ? (
                   <div className="w-full grid grid-cols-1 md:grid-cols-4 gap-4">
-                    <input className="bg-black border-2 border-zinc-800 p-4 font-black text-[#ff0038] uppercase" value={t.date} onChange={e => updateTour(t.id, 'date', e.target.value)} />
-                    <input className="bg-black border-2 border-zinc-800 p-4 font-bold" value={t.venue} onChange={e => updateTour(t.id, 'venue', e.target.value)} />
-                    <input className="bg-black border-2 border-zinc-800 p-4" value={t.location} onChange={e => updateTour(t.id, 'location', e.target.value)} />
+                    <input className="bg-black border-2 border-zinc-800 p-4 font-black text-[#ff0038] uppercase" value={t.date} onChange={e => setTour(tour.map(item => item.id === t.id ? {...item, date: e.target.value} : item))} />
+                    <input className="bg-black border-2 border-zinc-800 p-4 font-bold" value={t.venue} onChange={e => setTour(tour.map(item => item.id === t.id ? {...item, venue: e.target.value} : item))} />
+                    <input className="bg-black border-2 border-zinc-800 p-4" value={t.location} onChange={e => setTour(tour.map(item => item.id === t.id ? {...item, location: e.target.value} : item))} />
                     <div className="flex gap-2">
-                      <input className="bg-black border-2 border-zinc-800 p-4 flex-1 text-xs" value={t.link} onChange={e => updateTour(t.id, 'link', e.target.value)} />
-                      <button onClick={() => setTour(tour.filter(item => item.id !== t.id))} className="text-red-600"><Trash2 /></button>
+                      <input className="bg-black border-2 border-zinc-800 p-4 flex-1 text-xs" value={t.link} onChange={e => setTour(tour.map(item => item.id === t.id ? {...item, link: e.target.value} : item))} />
+                      <button onClick={() => setTour(tour.filter(item => item.id !== t.id))} className="text-[#ff0038]"><Trash2 /></button>
                     </div>
                   </div>
                 ) : (
                   <>
                     <div className="flex flex-col md:flex-row items-center gap-12 flex-1">
-                      <div className="text-6xl font-bangers text-[#ff0038] tracking-tighter group-hover:scale-110 transition-transform">{t.date}</div>
+                      <div className="text-6xl font-bangers text-[#ff0038]">{t.date}</div>
                       <div className="space-y-1">
-                        <h4 className="text-3xl lg:text-5xl font-bangers uppercase tracking-tighter">{t.venue}</h4>
-                        <div className="flex items-center gap-2 text-zinc-500 font-space font-black uppercase text-[10px] tracking-[0.3em]">
-                          <MapPin size={12} className="text-[#ff0038]" /> {t.location}
-                        </div>
+                        <h4 className="text-4xl font-bangers uppercase">{t.venue}</h4>
+                        <div className="text-zinc-500 font-space font-black uppercase text-[10px] tracking-widest">{t.location}</div>
                       </div>
                     </div>
                     <a href={t.link} target="_blank" className="bg-white text-black px-12 py-4 font-black uppercase text-sm border-r-4 border-b-4 border-[#ff0038] hover:bg-[#ff0038] hover:text-white transition-all flex items-center gap-3">
-                      Get Tickets <ExternalLink size={16} />
+                      TICKETS <ArrowRight size={16} />
                     </a>
                   </>
                 )}
               </div>
             ))}
-            
             {isEditMode && (
-              <button onClick={() => setTour([...tour, { id: Date.now().toString(), date: 'TBA', venue: 'NEW VENUE', location: 'CITY, ST', link: '#' }])} className="w-full p-8 text-zinc-700 hover:text-white transition-all font-black uppercase tracking-widest bg-black/50 border-t-4 border-zinc-900">
+              <button onClick={() => setTour([...tour, { id: Date.now().toString(), date: 'TBA', venue: 'NEW SHOW', location: 'CITY, ST', link: '#' }])} className="w-full p-8 text-zinc-700 hover:text-white transition-all font-black bg-black border-t-4 border-zinc-900">
                 + ADD PERFORMANCE
               </button>
             )}
           </div>
         </section>
 
-        {/* Media Sights - Brutalist Cards */}
-        <section id="media" className="space-y-24">
+        {/* Media Gallery */}
+        <section id="media" className="space-y-16">
           <div className="text-center">
-            <h3 className="text-6xl lg:text-[10rem] font-bangers uppercase tracking-tighter leading-none">
-              SIGHTS <span className="text-[#ff0038]">&</span> SOUNDS
-            </h3>
+            <h3 className="text-6xl lg:text-[8rem] font-bangers uppercase tracking-tighter">SIGHTS <span className="text-[#ff0038]">&</span> SOUNDS</h3>
           </div>
           
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-12">
-            {[
-              'https://images.unsplash.com/photo-1470225620780-dba8ba36b745',
-              'https://images.unsplash.com/photo-1493225255756-d9584f8606e9',
-              'https://images.unsplash.com/photo-1514525253361-bee8a197c9c4',
-              'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b',
-              'https://images.unsplash.com/photo-1459749411177-0421800673d6',
-              'https://images.unsplash.com/photo-1429962714451-bb934ecbb4ec'
-            ].map((url, i) => (
-              <div key={i} className="aspect-square border-4 border-white bg-zinc-900 group relative hover-lift cursor-crosshair">
-                <img src={`${url}?auto=format&fit=crop&q=80&w=800`} className="w-full h-full object-cover grayscale transition-all duration-700 group-hover:grayscale-0 group-hover:brightness-75" />
-                <div className="absolute inset-0 border-8 border-transparent group-hover:border-[#ff0038]/50 transition-all pointer-events-none"></div>
-                <div className="absolute top-2 right-2 bg-[#ff0038] text-white p-1 text-[8px] font-black uppercase opacity-0 group-hover:opacity-100 transition-opacity">LIVE_SHOT_{i+1}</div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {media.map((item) => (
+              <div key={item.id} className="aspect-square border-4 border-white bg-zinc-900 group relative overflow-hidden">
+                {isEditMode ? (
+                  <div className="absolute inset-0 bg-black/80 p-6 flex flex-col justify-center gap-4 z-10">
+                    <label className="text-[10px] font-black uppercase tracking-widest opacity-50">Image URL</label>
+                    <input 
+                      className="bg-zinc-800 p-3 text-xs outline-none focus:ring-1 focus:ring-[#ff0038]" 
+                      value={item.url} 
+                      onChange={(e) => setMedia(media.map(m => m.id === item.id ? {...m, url: e.target.value} : m))}
+                    />
+                    <button onClick={() => setMedia(media.filter(m => m.id !== item.id))} className="text-[#ff0038] self-end flex items-center gap-2 font-black text-[10px]">
+                      <Trash2 size={14} /> DELETE PHOTO
+                    </button>
+                  </div>
+                ) : (
+                  <img src={item.url} className="w-full h-full object-cover grayscale transition-all group-hover:grayscale-0 group-hover:scale-105" alt="Gallery" />
+                )}
               </div>
             ))}
+            {isEditMode && (
+              <button 
+                onClick={() => setMedia([...media, { id: Date.now().toString(), url: 'https://images.unsplash.com/photo-1524368535928-5b5e00ddc76b' }])}
+                className="aspect-square border-4 border-dashed border-zinc-800 flex flex-col items-center justify-center text-zinc-800 hover:text-white hover:border-white transition-all gap-4"
+              >
+                <Plus size={48} />
+                <span className="font-black text-xs uppercase tracking-widest">Add Photo</span>
+              </button>
+            )}
           </div>
         </section>
       </main>
 
-      {/* Footer - High Contrast */}
-      <footer className="bg-white text-black py-40 border-t-8 border-[#ff0038] relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-8 flex flex-col items-center text-center gap-16 relative z-10">
-          <div className="space-y-4">
-            <div className="w-20 h-20 bg-[#ff0038] mx-auto flex items-center justify-center text-white font-black text-5xl hover:rotate-90 transition-transform duration-500 cursor-pointer">
-              *
-            </div>
-            <h3 className="text-7xl lg:text-9xl font-bangers tracking-tight uppercase leading-none">SOUL TO SQUEEZE</h3>
+      {/* Footer */}
+      <footer className="bg-white text-black py-20 border-t-8 border-[#ff0038] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-8 flex flex-col items-center text-center gap-8 relative z-10">
+          <div className="w-16 h-16 bg-[#ff0038] flex items-center justify-center text-white font-black text-4xl hover:rotate-90 transition-transform">
+            *
           </div>
-          
-          <nav className="flex flex-wrap justify-center gap-x-12 gap-y-6 font-black uppercase text-xs tracking-[0.4em]">
-            <a href="#about" className="hover:text-[#ff0038] transition-colors">BIO</a>
-            <a href="#tour" className="hover:text-[#ff0038] transition-colors">TOUR</a>
-            <a href="#media" className="hover:text-[#ff0038] transition-colors">SIGHTS</a>
-            <a href="mailto:booking@soultosqueeze.com" className="hover:text-[#ff0038] transition-colors">BOOKING</a>
-          </nav>
-
-          <div className="space-y-4 pt-8">
-            <div className="flex items-center justify-center gap-6 font-space font-black text-[10px] tracking-widest uppercase">
-              <span>LONG ISLAND, NY</span>
-              <div className="w-2 h-2 bg-[#ff0038] rotate-45"></div>
-              <span>EST. 2024</span>
-              <div className="w-2 h-2 bg-black rotate-45"></div>
-              <span>RHCP TRIBUTE</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Marquee Background */}
-        <div className="absolute top-1/2 -translate-y-1/2 left-0 w-full opacity-5 pointer-events-none -rotate-12 select-none">
-          <div className="marquee-text font-bangers text-[30vw] leading-none text-black">
-            FUNK NEVER DIES FUNK NEVER DIES FUNK NEVER DIES
+          <h3 className="text-5xl lg:text-7xl font-bangers tracking-tight uppercase leading-none">SOUL TO SQUEEZE</h3>
+          <div className="flex items-center gap-4 font-space font-black text-[10px] tracking-widest uppercase">
+            <span>LONG ISLAND</span>
+            <div className="w-2 h-2 bg-[#ff0038] rotate-45"></div>
+            <span>EST. 2024</span>
           </div>
         </div>
       </footer>
 
-      {/* Floating Save Notice */}
+      {/* Global Save Indicator */}
       {isEditMode && (
-        <div className="fixed bottom-8 right-8 z-[110] bg-white border-4 border-black text-black px-6 py-4 flex items-center gap-4 animate-bounce shadow-2xl">
+        <div className="fixed bottom-8 right-8 z-[110] bg-white border-4 border-black text-black px-6 py-4 flex items-center gap-4 animate-pulse shadow-2xl">
           <div className="bg-[#ff0038] p-2 text-white">
             <Save size={20} />
           </div>
-          <span className="font-space font-black text-xs uppercase tracking-widest">LIVE AUTOSAVE ON</span>
+          <span className="font-space font-black text-xs uppercase tracking-widest">EDIT MODE: ACTIVE</span>
         </div>
       )}
     </div>
