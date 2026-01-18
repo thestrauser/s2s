@@ -5,7 +5,7 @@ import {
   Music, Image as ImageIcon, ExternalLink, RotateCcw, Save,
   Sparkles, Loader2
 } from 'lucide-react';
-import { generateBandBio, generateBandPoster } from './geminiService';
+import { generateBandBio, generateBandPoster } from './geminiService.ts';
 
 // --- Types ---
 type ContentBlock = {
