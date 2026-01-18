@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Trash2, MapPin, Lock, Unlock, Activity, Plus,
   Instagram, Facebook, Youtube, Twitter, Disc as Tiktok, 
-  Calendar, Music, Image as ImageIcon, ExternalLink, RotateCcw, Save
+  Calendar, Music, Image as ImageIcon, ExternalLink, RotateCcw, Save,
+  Sparkles, Loader2
 } from 'lucide-react';
+import { generateBandBio, generateBandPoster } from './geminiService';
 
 // --- Types ---
 type ContentBlock = {
@@ -51,6 +53,8 @@ export default function App() {
   const [blocks, setBlocks] = useState<ContentBlock[]>(INITIAL_BLOCKS);
   const [tour, setTour] = useState<TourDate[]>(INITIAL_TOUR);
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [isGeneratingBio, setIsGeneratingBio] = useState(false);
+  const [generatingPosterId, setGeneratingPosterId] = useState<string | null>(null);
 
   // --- Persistence Logic ---
   useEffect(() => {
@@ -84,6 +88,23 @@ export default function App() {
       localStorage.setItem('sts_tour', JSON.stringify(tour));
     }
   }, [bio, blocks, tour, hasLoaded]);
+
+  // --- AI Handlers ---
+  const handleGenerateBio = async () => {
+    setIsGeneratingBio(true);
+    const newBio = await generateBandBio("Soul To Squeeze");
+    setBio(newBio);
+    setIsGeneratingBio(false);
+  };
+
+  const handleGeneratePoster = async (id: string, title: string) => {
+    setGeneratingPosterId(id);
+    const posterUrl = await generateBandPoster(title || "Red Hot Chili Peppers Concert");
+    if (posterUrl) {
+      updateBlock(id, 'body', posterUrl);
+    }
+    setGeneratingPosterId(null);
+  };
 
   const resetToFactory = () => {
     if (window.confirm("Restore to January 14 version? This will undo all your custom text and images.")) {
@@ -227,13 +248,23 @@ export default function App() {
               THE <span className="text-white">SOUL</span>
             </h2>
             
-            <div className="relative">
+            <div className="relative group/edit">
               {isEditMode ? (
-                <textarea 
-                  className="w-full bg-zinc-900/50 border-2 border-dashed border-red-600/30 p-8 text-xl leading-relaxed text-zinc-300 min-h-[300px] outline-none font-light focus:border-red-600 transition-all"
-                  value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                />
+                <div className="space-y-4">
+                  <button 
+                    onClick={handleGenerateBio}
+                    disabled={isGeneratingBio}
+                    className="flex items-center gap-2 bg-red-600/20 text-red-600 px-4 py-2 rounded font-black text-[10px] uppercase tracking-widest border border-red-600/30 hover:bg-red-600 hover:text-white transition-all disabled:opacity-50"
+                  >
+                    {isGeneratingBio ? <Loader2 className="animate-spin" size={12} /> : <Sparkles size={12} />}
+                    Magic Write Bio
+                  </button>
+                  <textarea 
+                    className="w-full bg-zinc-900/50 border-2 border-dashed border-red-600/30 p-8 text-xl leading-relaxed text-zinc-300 min-h-[300px] outline-none font-light focus:border-red-600 transition-all"
+                    value={bio}
+                    onChange={(e) => setBio(e.target.value)}
+                  />
+                </div>
               ) : (
                 <p className="text-2xl md:text-4xl leading-relaxed font-light text-zinc-400 italic font-serif border-l-8 border-red-600 pl-10">
                   "{bio}"
@@ -273,11 +304,22 @@ export default function App() {
                       />
                     ) : (
                       <div className="space-y-4">
-                        <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Image Source URL</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[10px] font-black uppercase text-zinc-500 tracking-widest">Image Content</label>
+                          <button 
+                            onClick={() => handleGeneratePoster(block.id, block.title)}
+                            disabled={generatingPosterId === block.id}
+                            className="flex items-center gap-2 text-red-600 font-black text-[10px] uppercase tracking-widest hover:text-white transition-colors disabled:opacity-50"
+                          >
+                            {generatingPosterId === block.id ? <Loader2 className="animate-spin" size={12} /> : <Sparkles size={12} />}
+                            AI Poster Gen
+                          </button>
+                        </div>
                         <input 
                           className="w-full bg-black/40 border border-zinc-800 p-5 text-sm outline-none font-mono text-red-400 focus:border-red-600"
                           value={block.body}
                           onChange={(e) => updateBlock(block.id, 'body', e.target.value)}
+                          placeholder="URL or generated data..."
                         />
                       </div>
                     )}
