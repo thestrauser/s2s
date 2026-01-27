@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,79 +8,76 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Montserrat:wght@400;700;900&family=Space+Grotesk:wght@300;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Montserrat:wght@400;700;900&display=swap" rel="stylesheet">
     <style>
-        :root {
-            --rhcp-red: #ff0038;
-            --acid-yellow: #eaff00;
-        }
         .font-bangers { font-family: 'Bangers', cursive; }
         .font-montserrat { font-family: 'Montserrat', sans-serif; }
-        .font-space { font-family: 'Space Grotesk', sans-serif; }
-
         body {
-            background-color: #050505;
+            background-color: #0a0a0a;
             color: #ffffff;
             overflow-x: hidden;
         }
-
-        /* Halftone Pattern Background */
-        .bg-halftone {
-            background-image: radial-gradient(rgba(255, 255, 255, 0.05) 1px, transparent 0);
-            background-size: 20px 20px;
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1a1a1a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #ff0000;
+            border-radius: 4px;
+        }
+        .rhcp-glow {
+            text-shadow: 0 0 20px rgba(255, 0, 0, 0.8), 0 0 40px rgba(255, 0, 0, 0.4);
+        }
+        
+        @keyframes colorShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
         }
 
-        .rhcp-border-heavy {
-            border: 4px solid white;
-            box-shadow: 8px 8px 0px var(--rhcp-red);
+        @keyframes hueCycle {
+            0% { filter: hue-rotate(0deg) contrast(1.2) brightness(1); }
+            50% { filter: hue-rotate(180deg) contrast(1.5) brightness(1.2); }
+            100% { filter: hue-rotate(360deg) contrast(1.2) brightness(1); }
         }
 
-        .skew-section {
-            transform: skewY(-2deg);
-        }
-        .unskew-content {
-            transform: skewY(2deg);
+        @keyframes kenBurns {
+            0% { transform: scale(1) translate(0, 0); }
+            50% { transform: scale(1.15) translate(1%, -1%); }
+            100% { transform: scale(1) translate(0, 0); }
         }
 
-        @keyframes scanline {
-            0% { transform: translateY(-100%); }
-            100% { transform: translateY(100%); }
+        .animate-ken-burns {
+            animation: kenBurns 40s ease-in-out infinite;
         }
-        .scanline {
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(to right, transparent, var(--rhcp-red), transparent);
+
+        .animate-hue-cycle {
+            animation: hueCycle 15s linear infinite;
+        }
+
+        /* The Psychedelic Wave effect */
+        .bg-color-wave {
+            background: linear-gradient(-45deg, #ff0000, #ff8c00, #4b0082, #ff0055, #800000);
+            background-size: 400% 400%;
+            animation: colorShift 12s ease infinite;
+        }
+
+        .liquid-overlay {
             position: absolute;
-            animation: scanline 4s linear infinite;
-            z-index: 50;
-            pointer-events: none;
+            inset: 0;
+            background: radial-gradient(circle at center, transparent 0%, rgba(0,0,0,0.85) 100%);
+            mix-blend-mode: multiply;
         }
 
-        .text-outline {
-            -webkit-text-stroke: 1px rgba(255,255,255,0.3);
-            color: transparent;
+        .animate-spin-slow {
+            animation: spin 8s linear infinite;
         }
-
-        .marquee-text {
-            white-space: nowrap;
-            display: inline-block;
-            animation: marquee 20s linear infinite;
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
         }
-        @keyframes marquee {
-            from { transform: translateX(0); }
-            to { transform: translateX(-50%); }
-        }
-
-        .hover-lift {
-            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .hover-lift:hover {
-            transform: translateY(-8px) scale(1.02);
-        }
-
-        ::-webkit-scrollbar { width: 10px; }
-        ::-webkit-scrollbar-track { background: #000; }
-        ::-webkit-scrollbar-thumb { background: var(--rhcp-red); }
     </style>
 <script type="importmap">
 {
@@ -94,8 +92,7 @@
 }
 </script>
 </head>
-<body class="font-montserrat bg-halftone">
+<body class="font-montserrat">
     <div id="root"></div>
-    <script type="module" src="index.tsx"></script>
 </body>
 </html>

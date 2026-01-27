@@ -1,3 +1,4 @@
+
 export type ContentType = 'text' | 'image' | 'video' | 'audio' | 'social';
 
 export interface BandContent {
@@ -13,5 +14,5 @@ export interface TourDate {
   venue: string;
   location: string;
   date: string;
-  link: string;
+  ticketsUrl?: string;
 }
